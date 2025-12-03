@@ -31,7 +31,7 @@ loginForm.addEventListener('submit', (e) => {
     loginButton.textContent = 'Entrando...';
     errorMessage.textContent = '';
 
-    // Verifica se o CPF existe e se a senha bate
+    // Verifica se o CPF existe e se a senha batea
     if (USUARIOS_TESTE[cpf] && USUARIOS_TESTE[cpf].senha === senha) {
         // Sucesso! Armazena na sessão do navegador
         sessionStorage.setItem('usuarioLogado', 'true');
