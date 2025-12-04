@@ -1,10 +1,10 @@
-// frontend/login.js
 const loginForm = document.getElementById('login-form');
 const cpfInput = document.getElementById('cpf');
 const senhaInput = document.getElementById('senha');
 const loginButton = document.getElementById('login-button');
 const errorMessage = document.getElementById('error-message');
 
+// URL do Backend (Certifique-se que o node server.js está rodando)
 const API_URL = 'http://localhost:3000/api';
 
 if (sessionStorage.getItem('usuarioLogado') === 'true') {
@@ -30,16 +30,17 @@ loginForm.addEventListener('submit', async (e) => {
 
         const data = await response.json();
 
-        if (data.sucesso) {
+        if (response.ok && data.sucesso) {
             sessionStorage.setItem('usuarioLogado', 'true');
-            sessionStorage.setItem('usuarioNome', data.nome);
+            sessionStorage.setItem('usuarioNome', data.usuario.nome);
             window.location.href = 'index.html';
         } else {
-            throw new Error(data.mensagem || 'Erro no login');
+            throw new Error(data.mensagem || 'Erro desconhecido');
         }
 
     } catch (error) {
-        errorMessage.textContent = 'CPF ou Senha inválidos.';
+        console.error('Erro:', error);
+        errorMessage.textContent = 'Erro ao conectar. O servidor está ligado?';
         loginButton.disabled = false;
         loginButton.textContent = 'Entrar';
     }
