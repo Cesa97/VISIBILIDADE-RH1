@@ -240,30 +240,63 @@ function criarCardColaborador(colab, index) {
     const statusClass = status.includes('AFASTADO') ? 'status-afastado' : (status.includes('DESLIGADO') ? 'status-desligados' : 'status-ativo');
     const pcdClass = (colab.PCD === 'SIM') ? 'pcd-sim' : 'pcd-nao';
     
-    let classifClass = 'classificacao-sem';
-    if(colab.CLASSIFICACAO === 'BOM') classifClass = 'classificacao-bom';
-    // ... (pode adicionar as outras cores de classificação aqui se quiser)
+    let classificacaoClass = 'classificacao-sem';
+    const classif = (colab.CLASSIFICACAO || '').toUpperCase();
+    if(classif === 'BOM') classificacaoClass = 'classificacao-bom';
+    else if(classif === 'MUITO BOM') classificacaoClass = 'classificacao-muito-bom';
+    else if(classif === 'RECUPERAR') classificacaoClass = 'classificacao-recuperar';
+    else if(classif === 'DESLIGAR') classificacaoClass = 'classificacao-desligar';
+    else if(classif === 'PREPARAR') classificacaoClass = 'classificacao-preparar';
+
+    const nome = colab.NOME || '';
+    const cpf = formatarCPF(colab.CPF);
+    const funcao = colab['CARGO ATUAL'] || '';
+    const area = colab.ATIVIDADE || '';
+    const tempoEmpresa = formatarTempoDeEmpresa(colab['TEMPO DE EMPRESA']);
+    const escolaridade = colab.ESCOLARIDADE || '';
+    const salario = formatarSalario(colab.SALARIO);
+    const pcd = colab.PCD || 'NÃO';
+    const telefone = colab.CONTATO || '';
+    const telEmergencia = colab['CONT FAMILIAR'] || '';
+    const turno = colab.TURNO || '';
+    const lider = colab.LIDER || '';
+    const ultimaFuncao = colab.CARGO_ANTIGO || '';
+    const dataPromocao = formatarDataExcel(colab['DATA DA PROMOCAO']);
+    const classificacao = colab.CLASSIFICACAO || 'SEM';
 
     return `
         <div class="employee-card ${statusClass}">
             <div class="card-header">
                 <img src="avatar-placeholder.png" alt="Foto">
                 <div class="header-info">
-                    <h3>${colab.NOME}</h3>
+                    <h3>${nome}</h3>
                     <span class="status-badge ${statusClass}">${status}</span>
                 </div>
             </div>
             <div class="card-body">
-                <p><strong>NOME:</strong> <span>${colab.NOME}</span></p>
-                <p><strong>CPF:</strong> <span>${formatarCPF(colab.CPF)}</span></p>
-                <p><strong>FUNÇÃO ATUAL:</strong> <span>${colab['CARGO ATUAL'] || ''}</span></p>
-                <p><strong>AREA:</strong> <span>${colab.ATIVIDADE}</span></p>
-                <p><strong>TEMPO DE EMPRESA:</strong> <span>${formatarTempoDeEmpresa(colab['TEMPO DE EMPRESA'])}</span></p>
-                <p><strong>SALARIO:</strong> <span>${formatarSalario(colab.SALARIO)}</span></p>
-                <p><strong>PCD:</strong> <span class="pcd-badge ${pcdClass}">${colab.PCD || 'NÃO'}</span></p>
-                <p><strong>TURNO:</strong> <span>${colab.TURNO || ''}</span></p>
-                <p><strong>LIDER:</strong> <span>${colab.LIDER || ''}</span></p>
-                <p><strong>CLASSIFICAÇÃO:</strong> <span class="classificacao-badge ${classifClass}">${colab.CLASSIFICACAO || '-'}</span></p>
+                <p><strong>NOME:</strong> <span>${nome}</span></p>
+                <p><strong>CPF:</strong> <span>${cpf}</span></p>
+                <p><strong>FUNÇÃO ATUAL:</strong> <span>${funcao}</span></p>
+                <p><strong>AREA:</strong> <span>${area}</span></p>
+                <p><strong>TEMPO DE EMPRESA:</strong> <span>${tempoEmpresa}</span></p>
+                <p><strong>ESCOLARIDADE:</strong> <span>${escolaridade}</span></p>
+                <p><strong>SALARIO:</strong> <span>${salario}</span></p>
+                <p><strong>PCD:</strong> <span class="pcd-badge ${pcdClass}">${pcd}</span></p>
+                <p><strong>PLANO DE SAÚDE:</strong> <span></span></p>
+                <p><strong>ENDEREÇO COMPLETO:</strong> <span></span></p>
+                <p><strong>TELEFONE DO COLABORADOR:</strong> <span>${telefone}</span></p>
+                <p><strong>TELEFONE DE EMERGENCIA:</strong> <span>${telEmergencia}</span></p>
+                <p><strong>TURNO:</strong> <span>${turno}</span></p>
+                <p><strong>LIDER IMEDIATO:</strong> <span>${lider}</span></p>
+                <p><strong>ULTIMA FUNÇÃO:</strong> <span>${ultimaFuncao}</span></p>
+                <p><strong>DATA ULTIMA PROMOÇÃO:</strong> <span>${dataPromocao}</span></p>
+                <p><strong>CLASSIFICAÇÃO CICLO DE GENTE:</strong> <span class="classificacao-badge ${classificacaoClass}">${classificacao}</span></p>
+                <p><strong>HISTORICO DE ADVERTENCIAS:</strong> <span></span></p>
+                <p><strong>HISTORICO DE SUSPENSÃO:</strong> <span></span></p>
+                <p><strong>BANCO DE HORAS TOTAL:</strong> <span></span></p>
+                <p><strong>QTD INTERJORNADA:</strong> <span></span></p>
+                <p><strong>QTD INTRAJORNADA:</strong> <span></span></p>
+                <p><strong>PROGRAMAÇÃO FÉRIAS:</strong> <span></span></p>
             </div>
             <div class="card-footer" onclick="abrirModalDetalhes(${index})">
                 <span class="material-icons-outlined expand-icon">keyboard_arrow_down</span>
@@ -375,48 +408,114 @@ async function handleMetaSubmit(e) {
     }
 }
 
-// ======== MODAL E PDI ========
+// ======== FUNÇÃO NOVA: GERAR HTML DO PDI ========
 function gerarHtmlPDI(colab) {
-    let html = `<div class="pdi-section"><h3>Ciclo de Gente - Plano de Desenvolvimento</h3><div class="pdi-container">`;
-    let temPDI = false;
+    let html = `
+        <div class="pdi-section">
+            <h3>Ciclo de Gente - Plano de Desenvolvimento</h3>
+            <div class="pdi-container">
+    `;
+    
+    let encontrouAlgum = false;
+
+    // Loop de 1 a 7 para verificar as colunas
     for (let i = 1; i <= 7; i++) {
-        const comp = colab[`COMPETENCIA_${i}`];
-        if (comp) {
-            temPDI = true;
+        const competencia = colab[`COMPETENCIA_${i}`]; // Nome já corrigido pelo backend
+        
+        // Se tiver competência preenchida, cria o card
+        if (competencia) {
+            encontrouAlgum = true;
+            const status = colab[`STATUS_${i}`] || 'Pendente';
+            const situacao = colab[`SITUACAO_DA_ACAO_${i}`] || '-';
+            const acao = colab[`O_QUE_FAZER_${i}`] || '-';
+            const motivo = colab[`POR_QUE_FAZER_${i}`] || '-';
+            const quem = colab[`QUE_PODE_ME_AJUDAR_${i}`] || '-';
+            const como = colab[`COMO_VOU_FAZER_${i}`] || '-';
+            const dataFim = formatarDataExcel(colab[`DATA_DE_TERMINO_${i}`]);
+
             html += `
-                <div class="pdi-card" data-status="${(colab[`STATUS_${i}`]||'').toUpperCase()}">
-                    <h4>${i}. ${comp}</h4>
+                <div class="pdi-card" data-status="${status.toUpperCase()}">
+                    <h4>${i}. ${competencia}</h4>
                     <div class="pdi-details">
-                        <div class="pdi-item"><strong>Situação</strong><span>${colab[`SITUACAO_DA_ACAO_${i}`]||'-'}</span></div>
-                        <div class="pdi-item"><strong>Ação</strong><span>${colab[`O_QUE_FAZER_${i}`]||'-'}</span></div>
-                        <div class="pdi-item"><strong>Prazo</strong><span>${formatarDataExcel(colab[`DATA_DE_TERMINO_${i}`])}</span></div>
+                        <div class="pdi-item"><strong>Situação Atual</strong> <span>${situacao}</span></div>
+                        <div class="pdi-item"><strong>Ação (O que fazer)</strong> <span>${acao}</span></div>
+                        <div class="pdi-item"><strong>Motivo (Por que)</strong> <span>${motivo}</span></div>
+                        <div class="pdi-item"><strong>Apoio (Quem ajuda)</strong> <span>${quem}</span></div>
+                        <div class="pdi-item"><strong>Método (Como)</strong> <span>${como}</span></div>
+                        <div class="pdi-item"><strong>Prazo</strong> <span>${dataFim}</span></div>
+                        <div class="pdi-item"><strong>Status</strong> <span>${status}</span></div>
                     </div>
-                </div>`;
+                </div>
+            `;
         }
     }
-    if (!temPDI) html += `<p style="padding:10px;">Nenhum PDI cadastrado.</p>`;
-    return html + `</div></div>`;
+
+    if (!encontrouAlgum) {
+        html += `<p style="color:#666; padding:10px;">Nenhum plano de ação cadastrado para este ciclo.</p>`;
+    }
+
+    html += `</div></div>`;
+    return html;
 }
 
+// ======== FUNÇÃO DO MODAL ATUALIZADA ========
 function abrirModalDetalhes(index) {
     const colab = listaColaboradoresGlobal[index];
+    if (!colab) return;
+
     const modal = document.getElementById('modal-detalhes');
-    document.getElementById('modal-header').innerHTML = `
-        <img src="avatar-placeholder.png">
-        <div><h2>${colab.NOME}</h2><span class="status-badge">${colab.SITUACAO}</span></div>
+    const header = document.getElementById('modal-header');
+    const grid = document.getElementById('modal-dados-grid');
+
+    const nome = colab.NOME || '';
+    const status = colab.SITUACAO || '';
+    const funcao = colab['CARGO ATUAL'] || '';
+
+    // Cabeçalho do Modal
+    header.innerHTML = `
+        <img src="avatar-placeholder.png" alt="${nome}">
+        <div>
+            <h2 style="margin:0; font-size:1.5em;">${nome}</h2>
+            <span class="status-badge" style="background-color:rgba(255,255,255,0.2); border:1px solid #fff; margin-top:5px;">${status}</span>
+        </div>
     `;
-    document.getElementById('modal-dados-grid').innerHTML = `
-        <div class="modal-item"><strong>CPF</strong><span>${formatarCPF(colab.CPF)}</span></div>
-        <div class="modal-item"><strong>Cargo</strong><span>${colab['CARGO ATUAL']}</span></div>
-        <div class="modal-item"><strong>Área</strong><span>${colab.ATIVIDADE}</span></div>
-        <div class="modal-item"><strong>Salário</strong><span>${formatarSalario(colab.SALARIO)}</span></div>
-        <div class="modal-item" style="grid-column: 1/-1;">${gerarHtmlPDI(colab)}</div>
+
+    // Dados Pessoais + PDI
+    grid.innerHTML = `
+        <div class="modal-item"><strong>CPF</strong> <span>${formatarCPF(colab.CPF)}</span></div>
+        <div class="modal-item"><strong>Matrícula</strong> <span>${colab.MATRICULA || '-'}</span></div>
+        <div class="modal-item"><strong>Função</strong> <span>${funcao}</span></div>
+        <div class="modal-item"><strong>Área</strong> <span>${colab.ATIVIDADE || ''}</span></div>
+        <div class="modal-item"><strong>Salário</strong> <span>${formatarSalario(colab.SALARIO)}</span></div>
+        <div class="modal-item"><strong>Tempo de Casa</strong> <span>${formatarTempoDeEmpresa(colab['TEMPO DE EMPRESA'])}</span></div>
+        <div class="modal-item"><strong>Escolaridade</strong> <span>${colab.ESCOLARIDADE || ''}</span></div>
+        <div class="modal-item"><strong>PCD</strong> <span>${colab.PCD || 'NÃO'}</span></div>
+        <div class="modal-item"><strong>Líder</strong> <span>${colab.LIDER || ''}</span></div>
+        <div class="modal-item"><strong>Turno</strong> <span>${colab.TURNO || ''}</span></div>
+        <div class="modal-item"><strong>CLASSIFICAÇÃO CICLO DE GENTE</strong> <span>${colab.CLASSIFICACAO || '-'}</span></div>
+        <div class="modal-item"><strong>DATA ULTIMA PROMOÇÃO</strong> <span>${formatarDataExcel(colab['DATA DA PROMOCAO'])}</span></div>
+        <div class="modal-item" style="grid-column: 1/-1; background:#f9f9f9; padding:10px; border-radius:4px;">    
+        ${gerarHtmlPDI(colab)}
+        </div>
     `;
+
     modal.style.display = 'flex';
 }
-function fecharModal() { document.getElementById('modal-detalhes').style.display = 'none'; }
-window.onclick = (e) => { if (e.target == document.getElementById('modal-detalhes')) fecharModal(); };
+
+function fecharModal() {
+    document.getElementById('modal-detalhes').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('modal-detalhes');
+    if (event.target == modal) modal.style.display = "none";
+};
 
 // Auth Guard
-if (sessionStorage.getItem('usuarioLogado') !== 'true') window.location.href = 'login.html';
-else setupDashboard();
+;(function() {
+    if (sessionStorage.getItem('usuarioLogado') !== 'true') window.location.href = 'login.html';
+    else {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupDashboard);
+        else setupDashboard();
+    }
+})();
