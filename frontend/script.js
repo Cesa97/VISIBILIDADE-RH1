@@ -290,7 +290,7 @@ function criarCardColaborador(colab, index) {
                 <p><strong>LIDER IMEDIATO:</strong> <span>${lider}</span></p>
                 <p><strong>ULTIMA FUNÇÃO:</strong> <span>${ultimaFuncao}</span></p>
                 <p><strong>DATA ULTIMA PROMOÇÃO:</strong> <span>${dataPromocao}</span></p>
-                <p><strong>CLASSIFICAÇÃO CICLO DE GENTE:</strong> <span class="classificacao-badge ${classificacaoClass}">${classificacao}</span></p>
+                <p><strong>CICLO DE GENTE:</strong> <span class="classificacao-badge ${classificacaoClass}">${classificacao}</span></p>
                 <p><strong>HISTORICO DE ADVERTENCIAS:</strong> <span></span></p>
                 <p><strong>HISTORICO DE SUSPENSÃO:</strong> <span></span></p>
                 <p><strong>BANCO DE HORAS TOTAL:</strong> <span></span></p>

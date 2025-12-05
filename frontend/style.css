@@ -36,7 +36,6 @@ body {
     display: block;
     margin-bottom: 15px;
     color: #4a69e2;
-    /* Substitua por seu ícone <img> se preferir */
     background-color: #e6eafc;
     width: 60px;
     height: 60px;
@@ -73,7 +72,7 @@ body {
     padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    box-sizing: border-box; /* Garante que o padding não quebre o layout */
+    box-sizing: border-box;
     font-size: 1em;
 }
 
@@ -168,7 +167,7 @@ body {
 }
 
 .sidebar-nav {
-    flex-grow: 1; /* Empurra o footer para baixo */
+    flex-grow: 1;
     padding: 15px 0;
 }
 
@@ -193,7 +192,7 @@ body {
 }
 
 .nav-link.active {
-    background-color: #192A56; /* Cor escura do seu print */
+    background-color: #192A56;
     color: white;
     font-weight: bold;
 }
@@ -210,7 +209,6 @@ body {
 
 /* --- Estilos do Conteúdo Principal --- */
 .main-content {
-    /* Deixa espaço para a sidebar fixa */
     margin-left: 260px; 
     flex-grow: 1;
     padding: 20px;
@@ -231,9 +229,8 @@ body {
     border: 1px solid #ddd;
 }
 
-/* ======== 3. ESTILOS ANTIGOS DO DASHBOARD (Agora dentro do .main-content) ======== */
+/* ======== 3. ESTILOS DO DASHBOARD (Cards e Filtros) ======== */
 
-/* Estilos do Container de Filtros */
 .filter-container {
     display: flex;
     flex-wrap: wrap;
@@ -257,7 +254,6 @@ body {
     max-width: 300px;
 }
 
-/* Estilo do Indicador de Carregamento */
 #loading-indicator {
     display: none; 
     width: 100%;
@@ -273,19 +269,16 @@ body {
     flex-wrap: wrap; 
     justify-content: center; 
     gap: 20px; 
+    /* Garante que os cards na mesma linha tenham a mesma altura */
+    align-items: stretch; 
 }
 
 /* O card do colaborador */
 .employee-card {
     flex-grow: 1;
     flex-shrink: 1;
-    
-    /* ======== MUDANÇA 1: Ajuste de Largura ======== */
-    /* Define uma base de 390px (como na sua imagem "boa") */
     flex-basis: 390px; 
-    /* Permite crescer se houver espaço */
     max-width: 420px;
-    /* IMPEDE que o card encolha a ponto de quebrar o layout interno */
     min-width: 390px; 
     
     background-color: #ffffff;
@@ -294,6 +287,11 @@ body {
     border-radius: 8px;
     overflow: hidden;
     border-top: 5px solid #ccc; 
+
+    /* --- ALINHAMENTO DO RODAPÉ --- */
+    display: flex;            
+    flex-direction: column;   
+    justify-content: space-between; 
 }
 
 /* Cores da borda baseadas no status */
@@ -324,7 +322,7 @@ body {
     font-size: 1.2em;
 }
 
-/* Badge de Status */
+/* Badge de Status (cabeçalho) */
 .status-badge {
     font-size: 0.8em;
     font-weight: bold;
@@ -340,44 +338,39 @@ body {
 .status-badge.status-desligados { background-color: #dc3545; }
 
 /* Corpo do card */
-.card-body { padding: 15px; }
+.card-body { 
+    padding: 15px;
+    flex-grow: 1; 
+}
+
 .card-body p {
     margin: 8px 0;
     font-size: 0.9em;
     color: #555;
     display: flex;
-    /* Remove o space-between para o alinhamento à esquerda funcionar */
-    /* justify-content: space-between; */ 
+    /* Alinha label e valor horizontalmente */
+    align-items: flex-start; 
 }
 
-/* ======== MUDANÇA 2: Ajuste das colunas ======== */
-
-/* Esta é a "coluna" dos rótulos (NOME:, CPF:, etc.) */
+/* Coluna ESQUERDA (Rótulo) */
 .card-body p strong {
     color: #000;
-    margin-right: 10px;  /* Espaço entre o rótulo e o valor */
-    
-    /* Largura fixa para caber o rótulo mais longo (CLASSIFICAÇÃO...) */
+    margin-right: 10px;
     flex-basis: 240px; 
-    
-    flex-shrink: 0; /* Impede que o rótulo encolha */
-    text-align: left; /* Garante que o rótulo esteja à esquerda */
+    flex-shrink: 0;
+    text-align: left;
 }
 
-/* Esta é a "coluna" dos valores (Abrair Garcia, 1 mês, etc.) */
+/* Coluna DIREITA (Valor) */
 .card-body p span {
-    text-align: left; /* Alinha o valor à esquerda */
+    text-align: left;
     color: #333;
-    
-    /* Permite que valores longos quebrem a linha */
     word-break: break-word;  
-
-    flex-grow: 1; /* Faz o <span> (valor) crescer e ocupar o espaço restante */
-    min-width: 0; /* Ajuda o flexbox a calcular a quebra de linha */
+    flex-grow: 1;
+    min-width: 0;
 }
-/* ======== FIM DA CORREÇÃO DE ALINHAMENTO ======== */
 
-
+/* --- BADGES INTERNOS (PCD e CLASSIFICAÇÃO) --- */
 /* Badge PCD */
 .pcd-badge {
     padding: 3px 8px;
@@ -387,19 +380,34 @@ body {
 .pcd-badge.pcd-sim { background-color: #d4edda; color: #155724; }
 .pcd-badge.pcd-nao { background-color: #f8d7da; color: #721c24; }
 
-/* ======== CORREÇÃO PARA O BADGE PCD (Mantida) ======== */
-.card-body p span.pcd-badge {
-    flex-basis: auto;  /* Faz o span ter o tamanho do seu conteúdo */
-    flex-grow: 0;      /* Impede que o badge cresça */
-    text-align: center; 
-    
-    /* O justify-content: space-between foi removido do <p> */
-    /* Precisamos forçar o badge para a direita */
-    margin-left: auto;
+/* Badge Classificação */
+.classificacao-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #333;
+    background-color: #f0f0f0;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+.classificacao-desligar { background-color: #dc3545; color: white; }
+.classificacao-recuperar { background-color: #ffc107; color: #333; }
+.classificacao-bom { background-color: #d4edda; color: #155724; }
+.classificacao-muito-bom { background-color: #28a745; color: white; }
+.classificacao-preparar { background-color: #4a69e2; color: white; }
+.classificacao-sem { background-color: #f8f9fa; color: #555; border: 1px solid #ddd; }
+
+/* --- CORREÇÃO IMPORTANTE: ALINHAMENTO DOS BADGES --- */
+/* Isso força os spans que tem badge a não ocuparem a largura total */
+.card-body p span.pcd-badge,
+.card-body p span.classificacao-badge {
+    flex-basis: auto;  /* Tamanho automático baseado no texto */
+    flex-grow: 0;      /* Não cresce para ocupar espaço */
+    text-align: center;
+    /* Se quiser alinhar à direita: margin-left: auto; */
 }
 
-
-/* Estilos da Paginação (Botão Carregar Mais) */
+/* Estilos da Paginação */
 #pagination-container {
     width: 100%;
     text-align: center;
@@ -425,7 +433,8 @@ body {
     cursor: not-allowed;
     transform: none;
 }
-/* ======== 4. ESTILOS DO PAINEL DE GESTÃO (Form e Tabela) ======== */
+
+/* ======== 4. ESTILOS DO PAINEL DE GESTÃO ======== */
 
 .form-container,
 .report-container {
@@ -471,15 +480,15 @@ body {
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 1em;
-    box-sizing: border-box; /* Importante para o padding */
+    box-sizing: border-box;
 }
 
 .meta-form button {
     padding: 10px 20px;
-    height: 40px; /* Alinha com os inputs */
+    height: 40px;
     border: none;
     border-radius: 6px;
-    background-color: #28a745; /* Verde Sucesso */
+    background-color: #28a745;
     color: white;
     font-weight: bold;
     font-size: 0.9em;
@@ -496,81 +505,6 @@ body {
     font-size: 0.9em;
     margin: 0 0 0 10px;
     visibility: hidden;
-}
-
-/* --- Estilos da Tabela de Relatório --- */
-.report-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-
-.report-table th,
-.report-table td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: left;
-}
-
-.report-table th {
-    background-color: #f8f9fa;
-    font-size: 0.9em;
-    text-transform: uppercase;
-}
-
-.report-table td {
-    font-size: 1em;
-}
-
-/* Colunas de números alinhadas à direita */
-.report-table th:nth-child(2),
-.report-table td:nth-child(2),
-.report-table th:nth-child(3),
-.report-table td:nth-child(3) {
-    text-align: center;
-    width: 100px;
-}
-/* ======== 5. ESTILOS DA PÁGINA DE GRÁFICOS ======== */
-
-.chart-container {
-    background-color: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 25px;
-    margin-bottom: 30px;
-}
-
-.chart-container h2 {
-    margin-top: 0;
-    text-align: center;
-}
-.chart-container p {
-    text-align: center;
-    font-size: 0.9em;
-    color: #555;
-    margin-bottom: 25px;
-}
-
-/* Define um tamanho para o canvas do gráfico */
-#grafico-metas-qlp {
-    width: 100% !important;
-    max-height: 450px;
-}
-/* ======== CORREÇÃO PARA O BADGE PCD ======== */
-
-/* Isto remove a largura de 60% (flex-basis) 
-  especificamente do span que tem a classe .pcd-badge
-*/
-.card-body p span.pcd-badge {
-    flex-basis: auto;  /* Faz o span ter o tamanho do seu conteúdo */
-    text-align: center; /* Centraliza o "NAO" ou "SIM" dentro do badge */
-}
-
-
-/* --- CSS ATUALIZADO PARA 3 TABELAS DE RELATÓRIO --- */
-.report-container {
-    margin-bottom: 30px; /* Adiciona espaço entre os relatórios */
 }
 
 .report-table {
@@ -595,44 +529,39 @@ body {
     font-weight: bold;
 }
 
-/* Alinha a primeira coluna (ÁREA) à esquerda */
 .report-table td:first-child,
 .report-table th:first-child {
     text-align: left;
     font-weight: bold;
 }
 
-/* Centraliza colunas de META e REAL */
 .report-table th:nth-child(2), .report-table td:nth-child(2),
 .report-table th:nth-child(3), .report-table td:nth-child(3) {
     text-align: center;
     width: 100px;
-    font-weight: normal; /* Garante que os números não fiquem em negrito */
+    font-weight: normal;
 }
 
-/* ======== NOVOS ESTILOS PARA O CARD DE COTA (PINK) ======== */
 .report-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px; /* Espaço entre o header e o <p> */
+    margin-bottom: 10px;
 }
 
-/* Remove a margem padrão do h2 quando ele está no header */
 .report-header h2 {
     margin: 0;
-    border-bottom: none; /* Remove a borda de baixo que estava no h2 */
+    border-bottom: none;
     padding-bottom: 0;
 }
 
-/* O card da Cota (o "pink") */
 .quota-info {
     text-align: right;
     background-color: #f8f9fa;
     border: 1px solid #ddd;
     border-radius: 6px;
     padding: 5px 10px;
-    min-width: 150px; /* Largura mínima */
+    min-width: 150px;
 }
 
 .quota-info span {
@@ -642,49 +571,39 @@ body {
 }
 
 .quota-info strong {
-    font-size: 1.8em; /* "tamanho da letra" grande */
-    color: #192A56; /* Cor principal (azul escuro) */
+    font-size: 1.8em;
+    color: #192A56;
     display: block;
 }
 
-/* ======== NOVOS ESTILOS PARA BADGE DE CLASSIFICAÇÃO ======== */
-.classificacao-badge {
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-weight: bold;
-    color: #333;
-    background-color: #f0f0f0; /* Cor padrão para "SEM" */
-    text-transform: uppercase;
-    font-size: 0.9em;
+/* ======== 5. ESTILOS DA PÁGINA DE GRÁFICOS ======== */
+
+.chart-container {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    padding: 25px;
+    margin-bottom: 30px;
 }
 
-/* Vermelho -> Laranja -> Amarelo -> Verde Claro -> Verde Escuro -> Azul */
-.classificacao-desligar {
-    background-color: #dc3545; /* Vermelho (igual Desligados) */
-    color: white;
+.chart-container h2 {
+    margin-top: 0;
+    text-align: center;
 }
-.classificacao-recuperar {
-    background-color: #ffc107; /* Amarelo (igual Afastado) */
-    color: #333;
-}
-.classificacao-bom {
-    background-color: #d4edda; /* Verde Claro (igual PCD Sim) */
-    color: #155724;
-}
-.classificacao-muito-bom {
-    background-color: #28a745; /* Verde (igual Ativo) */
-    color: white;
-}
-.classificacao-preparar {
-    background-color: #4a69e2; /* Azul (igual Botão Login) */
-    color: white;
-}
-.classificacao-sem {
-    background-color: #f8f9fa; /* Cinza claro */
+.chart-container p {
+    text-align: center;
+    font-size: 0.9em;
     color: #555;
-    border: 1px solid #ddd;
+    margin-bottom: 25px;
 }
-/* ======== ESTILOS DA SETA DE EXPANDIR (NO CARD) ======== */
+
+#grafico-metas-qlp {
+    width: 100% !important;
+    max-height: 450px;
+}
+
+/* ======== ESTILOS DA SETA DE EXPANDIR (CARD FOOTER) ======== */
 .card-footer {
     text-align: center;
     padding: 10px;
@@ -707,27 +626,27 @@ body {
     transition: transform 0.3s;
 }
 
-/* ======== ESTILOS DO MODAL (JANELA EXPANDIDA) ======== */
+/* ======== ESTILOS DO MODAL ======== */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro transparente */
-    z-index: 1000; /* Fica em cima de tudo */
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
     display: flex;
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(3px); /* Efeito de desfoque no fundo */
+    backdrop-filter: blur(3px);
 }
 
 .modal-content {
     background-color: #fff;
     width: 90%;
-    max-width: 1500px; /* Largura máxima da janela */
-    max-height: 90vh; /* Altura máxima (90% da tela) */
-    border-radius: 12px;  /* Cantos arredondados */
+    max-width: 1500px;
+    max-height: 90vh;
+    border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     position: relative;
     display: flex;
@@ -747,14 +666,14 @@ body {
     right: 20px;
     font-size: 28px;
     font-weight: bold;
-    color: #fff; /* X branco pois o header terá cor */
+    color: #fff;
     cursor: pointer;
     z-index: 10;
 }
 
 .modal-header-custom {
     padding: 25px;
-    background-color: #192A56; /* Azul escuro do tema */
+    background-color: #192A56;
     color: white;
     display: flex;
     align-items: center;
@@ -771,22 +690,18 @@ body {
 
 .modal-body-scroll {
     padding: 30px;
-    overflow-y: auto; /* Permite rolar se tiver muito texto */
+    overflow-y: auto;
     flex-grow: 1;
 }
 
-/* Grid para organizar os dados em 2 colunas */
 .modal-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Duas colunas iguais */
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
 }
 
-/* Se a tela for pequena (celular), vira 1 coluna */
 @media (max-width: 600px) {
-    .modal-grid {
-        grid-template-columns: 1fr;
-    }
+    .modal-grid { grid-template-columns: 1fr; }
 }
 
 .modal-item {
@@ -808,8 +723,8 @@ body {
     font-weight: 500;
     word-break: break-word;
 }
-/* ======== ESTILOS DO CICLO DE GENTE (PDI) - VISUAL NOVO ======== */
 
+/* ======== ESTILOS DO CICLO DE GENTE (PDI) ======== */
 .pdi-section {
     margin-top: 30px;
     border-top: 2px solid #eee;
@@ -828,99 +743,78 @@ body {
 .pdi-container {
     display: flex;
     flex-direction: column;
-    gap: 25px; /* Mais espaço entre os cards */
+    gap: 25px;
 }
 
-/* Card da Competência */
 .pdi-card {
     background-color: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    overflow: hidden; /* Garante que o cabeçalho não saia do card */
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
-/* --- TÍTULO COM MAIS DESTAQUE --- */
 .pdi-card h4 {
     margin: 0;
-    background-color: #f1f3f5; /* Fundo cinza suave */
-    color: #000000;           /* Azul escuro */
+    background-color: #f1f3f5;
+    color: #000000;
     padding: 15px 20px;
     font-size: 1.1em;
-    font-weight: 800;         /* Negrito forte */
+    font-weight: 800;
     text-transform: uppercase;
     border-bottom: 2px solid #e9ecef;
     letter-spacing: 0.5px;
 }
 
-/* --- CONTEÚDO EM LINHA COM ROLAGEM (SCROLL) --- */
 .pdi-details {
-    display: flex;            /* Força ficar lado a lado */
-    gap: 0;                   /* Remove gap para usar bordas */
-    overflow-x: auto;         /* Cria barra de rolagem se precisar */
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
     padding: 0;
-    white-space: nowrap;      /* Impede quebra de texto forçada */
-    
-    /* Estilização da barra de rolagem (Chrome/Safari/Edge) */
+    white-space: nowrap;
     scrollbar-width: thin;
     scrollbar-color: #ccc #f9f9f9;
 }
 
-/* Design da barra de rolagem */
-.pdi-details::-webkit-scrollbar {
-    height: 8px;
-}
-.pdi-details::-webkit-scrollbar-track {
-    background: #f9f9f9;
-}
-.pdi-details::-webkit-scrollbar-thumb {
-    background-color: #bbb;
-    border-radius: 4px;
-}
+.pdi-details::-webkit-scrollbar { height: 8px; }
+.pdi-details::-webkit-scrollbar-track { background: #f9f9f9; }
+.pdi-details::-webkit-scrollbar-thumb { background-color: #bbb; border-radius: 4px; }
 
-/* Cada coluna de informação */
 .pdi-item {
-    flex: 0 0 auto;           /* Não deixa encolher */
-    width: 200px;             /* Largura fixa boa para leitura */
+    flex: 0 0 auto;
+    width: 200px;
     min-width: 180px;
     padding: 15px 20px;
-    border-right: 1px solid #eee; /* Linha separando colunas */
+    border-right: 1px solid #eee;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
 }
 
-.pdi-item:last-child {
-    border-right: none;
-}
+.pdi-item:last-child { border-right: none; }
 
-/* Título da coluna (Situação, Ação, etc) - COM MAIS DESTAQUE */
 .pdi-item strong {
     display: block;
-    font-size: 0.85em;        /* Aumentado (era 0.7em) */
-    color: #020202;           /* Azul Escuro do tema (era cinza) */
+    font-size: 0.85em;
+    color: #020202;
     text-transform: uppercase;
-    margin-bottom: 12px;      /* Mais espaço para o texto de baixo */
-    font-weight: 800;         /* Negrito Extra */
-    letter-spacing: 0.5px;    /* Leve espaçamento entre letras */
-    
-    /* Linha decorativa abaixo do título */
+    margin-bottom: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
     border-bottom: 2px solid #e9ecef; 
     padding-bottom: 5px;
 }
 
-/* Valor da coluna */
 .pdi-item span {
     font-size: 0.95em;
     color: #333;
     font-weight: 500;
-    white-space: normal; /* Permite que o texto dentro da coluna quebre linha, mas a coluna não */
+    white-space: normal;
     line-height: 1.4;
 }
 
-/* Bordas coloridas baseadas no status (opcional, mantendo visual clean) */
 .pdi-card[data-status="CONCLUIDO"] h4 { border-left: 5px solid #28a745; }
 .pdi-card[data-status="REALIZADO"] h4 { border-left: 5px solid #28a745; }
 .pdi-card[data-status="ATRASADO"] h4 { border-left: 5px solid #dc3545; }
