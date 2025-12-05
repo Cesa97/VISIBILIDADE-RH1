@@ -11,7 +11,11 @@ let metaChartQLP = null, metaChartPCD = null, metaChartJovem = null;
 let currentPage = 0;
 let listaColaboradoresGlobal = []; 
 
-// ======== FUNÇÕES DE FORMATAÇÃO (UI ONLY) ========
+// Dados do Usuário Logado
+const usuarioPerfil = sessionStorage.getItem('usuarioPerfil'); // 'admin' ou 'user'
+const usuarioCPF = sessionStorage.getItem('usuarioCPF');
+
+// ======== FUNÇÕES DE FORMATAÇÃO ========
 function formatarSalario(valor) {
     if (!valor) return '';
     const numeroLimpo = String(valor).replace("R$", "").replace(/\./g, "").replace(",", ".");
@@ -59,7 +63,6 @@ function setupDashboard() {
     dashboardContainer = document.getElementById('dashboard-container');
     loadingIndicator = document.getElementById('loading-indicator');
     
-    // Filtros
     searchBar = document.getElementById('search-bar');
     filterStatus = document.getElementById('filter-status');
     filterArea = document.getElementById('filter-area');
@@ -67,7 +70,6 @@ function setupDashboard() {
     filterClassificacao = document.getElementById('filter-classificacao');
     loadMoreButton = document.getElementById('load-more-button');
     
-    // Metas e Relatórios
     metaForm = document.getElementById('meta-form');
     metaAreaSelect = document.getElementById('meta-area');
     metaValorInput = document.getElementById('meta-valor');
@@ -80,7 +82,16 @@ function setupDashboard() {
     reportTableBodyPCD = document.getElementById('report-table-body-pcd');
     reportTableBodyJovem = document.getElementById('report-table-body-jovem');
 
-    // Event Listeners (Debounce simples no search)
+    if (usuarioPerfil === 'user') {
+        const filterContainer = document.querySelector('.filter-container');
+        if (filterContainer) filterContainer.style.display = 'none';
+        
+        const navGestao = document.getElementById('nav-painel-gestao');
+        const navGraficos = document.getElementById('nav-graficos');
+        if (navGestao) navGestao.style.display = 'none';
+        if (navGraficos) navGraficos.style.display = 'none';
+    }
+
     let timeout = null;
     if (searchBar) searchBar.addEventListener('input', () => {
         clearTimeout(timeout);
@@ -96,11 +107,10 @@ function setupDashboard() {
     if (metaForm) metaForm.addEventListener('submit', handleMetaSubmit);
     
     setupNavigation();
-    carregarFiltrosAPI(); // Chama API para popular selects
+    carregarFiltrosAPI(); 
     restaurarAbaAtiva();
 }
 
-// Navegação entre abas
 function setupNavigation() {
     const navs = {
         'visao-geral': document.getElementById('nav-visao-geral'),
@@ -110,10 +120,13 @@ function setupNavigation() {
     Object.keys(navs).forEach(key => {
         if(navs[key]) navs[key].addEventListener('click', (e) => {
             e.preventDefault();
+            if (usuarioPerfil === 'user' && key !== 'visao-geral') {
+                alert('Acesso restrito a administradores.');
+                return;
+            }
             trocarAba(key);
         });
     });
-    
     const navSair = document.getElementById('nav-sair');
     if (navSair) navSair.addEventListener('click', (e) => {
         e.preventDefault();
@@ -128,7 +141,6 @@ function trocarAba(aba) {
         'gestao': document.getElementById('gestao-content'),
         'graficos': document.getElementById('graficos-content')
     };
-    
     for (let key in contents) {
         if (contents[key]) contents[key].style.display = (key === aba) ? 'block' : 'none';
         const nav = document.getElementById(`nav-${key === 'gestao' ? 'painel-gestao' : key}`);
@@ -138,50 +150,42 @@ function trocarAba(aba) {
         }
     }
     sessionStorage.setItem('activeTab', aba);
-
-    if (aba === 'gestao') carregarDadosDashboard(); 
-    if (aba === 'graficos') carregarDadosDashboard(true);
+    if (usuarioPerfil === 'admin') {
+        if (aba === 'gestao') carregarDadosDashboard(); 
+        if (aba === 'graficos') carregarDadosDashboard(true);
+    }
 }
 
 function restaurarAbaAtiva() {
-    const activeTab = sessionStorage.getItem('activeTab') || 'visao-geral';
+    let activeTab = sessionStorage.getItem('activeTab') || 'visao-geral';
+    if (usuarioPerfil === 'user') activeTab = 'visao-geral';
     trocarAba(activeTab);
     if(activeTab === 'visao-geral') carregarColaboradores();
 }
 
-// ======== CONSUMO DA API: COLABORADORES ========
-
 async function carregarFiltrosAPI() {
+    if (usuarioPerfil === 'user') return;
     try {
         const res = await fetch(`${API_URL}/filtros`);
         const { areas, lideres, classificacoes } = await res.json();
-
         const popular = (el, arr) => {
             if(!el) return;
             el.innerHTML = '<option value="">Todos</option>' + arr.map(i => `<option value="${i}">${i}</option>`).join('');
         };
-
         popular(filterArea, areas);
         popular(filterLider, lideres);
         popular(filterClassificacao, classificacoes);
-        
-        // Popula também o select de Metas
-        if(metaAreaSelect) {
-            metaAreaSelect.innerHTML = '<option value="">Selecione...</option>' + areas.map(i => `<option value="${i}">${i}</option>`).join('');
-        }
-
+        if(metaAreaSelect) metaAreaSelect.innerHTML = '<option value="">Selecione...</option>' + areas.map(i => `<option value="${i}">${i}</option>`).join('');
     } catch (e) { console.error("Erro ao carregar filtros", e); }
 }
 
 async function carregarColaboradores() {
     currentPage = 0;
     if (!loadingIndicator || !dashboardContainer) return;
-    
     loadingIndicator.style.display = 'block';
     dashboardContainer.innerHTML = '';
     listaColaboradoresGlobal = [];
     if(loadMoreButton) loadMoreButton.style.display = 'none';
-
     await fetchColaboradores();
 }
 
@@ -195,15 +199,20 @@ async function carregarMais() {
 }
 
 async function fetchColaboradores() {
-    // Monta a URL com Query Params
-    const params = new URLSearchParams({
+    let paramsObj = {
         page: currentPage,
         search: searchBar ? searchBar.value : '',
         status: filterStatus ? filterStatus.value : '',
         area: filterArea ? filterArea.value : '',
         lider: filterLider ? filterLider.value : '',
         classificacao: filterClassificacao ? filterClassificacao.value : ''
-    });
+    };
+
+    if (usuarioPerfil === 'user') {
+        paramsObj = { cpf_filtro: usuarioCPF, page: 0 };
+    }
+
+    const params = new URLSearchParams(paramsObj);
 
     try {
         const res = await fetch(`${API_URL}/colaboradores?${params}`);
@@ -212,7 +221,7 @@ async function fetchColaboradores() {
         loadingIndicator.style.display = 'none';
 
         if (!data || data.length === 0) {
-            if(currentPage === 0) dashboardContainer.innerHTML = "<p>Nenhum colaborador encontrado.</p>";
+            if(currentPage === 0) dashboardContainer.innerHTML = "<p>Nenhum dado encontrado.</p>";
             return;
         }
 
@@ -221,12 +230,10 @@ async function fetchColaboradores() {
             dashboardContainer.innerHTML += criarCardColaborador(colaborador, index);
         });
 
-        // Controle do botão Carregar Mais
         if(loadMoreButton) {
             loadMoreButton.disabled = false;
             loadMoreButton.textContent = 'Carregar Mais';
-            // Se vieram menos itens que o limite, acabou
-            loadMoreButton.style.display = (data.length < 30) ? 'none' : 'block';
+            loadMoreButton.style.display = (usuarioPerfil === 'user' || data.length < 30) ? 'none' : 'block';
         }
 
     } catch (error) {
@@ -248,6 +255,9 @@ function criarCardColaborador(colab, index) {
     else if(classif === 'DESLIGAR') classificacaoClass = 'classificacao-desligar';
     else if(classif === 'PREPARAR') classificacaoClass = 'classificacao-preparar';
 
+    // CORREÇÃO: Usa imagem online se não houver foto salva
+    const fotoSrc = colab.FOTO_PERFIL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+
     const nome = colab.NOME || '';
     const cpf = formatarCPF(colab.CPF);
     const funcao = colab['CARGO ATUAL'] || '';
@@ -267,7 +277,7 @@ function criarCardColaborador(colab, index) {
     return `
         <div class="employee-card ${statusClass}">
             <div class="card-header">
-                <img src="avatar-placeholder.png" alt="Foto">
+                <img src="${fotoSrc}" alt="Foto" style="object-fit:cover;">
                 <div class="header-info">
                     <h3>${nome}</h3>
                     <span class="status-badge ${statusClass}">${status}</span>
@@ -305,124 +315,127 @@ function criarCardColaborador(colab, index) {
     `;
 }
 
-// ======== DADOS DE GESTÃO E GRÁFICOS (API AGREGADA) ========
+// ======== COMPRIMIR IMAGEM ========
+function compressImage(file, maxWidth, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
 
-async function carregarDadosDashboard(renderizarGraficos = false) {
-    try {
-        const res = await fetch(`${API_URL}/dashboard-stats`);
-        const { stats, totalAtivos, areas } = await res.json();
-        
-        // Preenche Relatórios
-        renderizarTabelasRelatorio(stats, areas, totalAtivos);
-        
-        if (renderizarGraficos) {
-            renderizarGraficosChartJS(stats, areas);
-        }
-    } catch (e) { console.error("Erro dashboard stats", e); }
-}
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
 
-function renderizarTabelasRelatorio(stats, areas, totalAtivos) {
-    if(!reportTableBodyQLP) return;
-    
-    let htmlQLP = '', htmlPCD = '', htmlJovem = '';
-    
-    // Atualiza cards de Cota
-    document.getElementById('quota-pcd-value').textContent = Math.ceil(totalAtivos * (totalAtivos > 1000 ? 0.05 : 0.02));
-    document.getElementById('quota-jovem-value').textContent = Math.ceil(totalAtivos * 0.05);
-
-    areas.forEach(a => {
-        const s = stats[a];
-        htmlQLP += `<tr><td>${a}</td><td>${s.meta.meta || 0}</td><td>${s.qlp}</td></tr>`;
-        if(s.meta.meta_pcd || s.pcd > 0) htmlPCD += `<tr><td>${a}</td><td>${s.meta.meta_pcd || 0}</td><td>${s.pcd}</td></tr>`;
-        if(s.meta.meta_jovem || s.jovem > 0) htmlJovem += `<tr><td>${a}</td><td>${s.meta.meta_jovem || 0}</td><td>${s.jovem}</td></tr>`;
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
     });
-
-    reportTableBodyQLP.innerHTML = htmlQLP;
-    reportTableBodyPCD.innerHTML = htmlPCD || '<tr><td colspan="3">Vazio</td></tr>';
-    reportTableBodyJovem.innerHTML = htmlJovem || '<tr><td colspan="3">Vazio</td></tr>';
 }
 
-function renderizarGraficosChartJS(stats, areas) {
-    const criarDataset = (keyMeta, keyReal) => {
-        const labels = [], dMeta = [], dReal = [], dGap = [];
-        areas.forEach(a => {
-            const m = stats[a].meta[keyMeta] || 0;
-            const r = stats[a][keyReal];
-            if (m > 0 || r > 0) {
-                labels.push(a);
-                dMeta.push(m);
-                dReal.push(r);
-                dGap.push(Math.max(0, m - r));
-            }
-        });
-        return { labels, dMeta, dReal, dGap };
-    };
-
-    const render = (id, data, instance) => {
-        const ctx = document.getElementById(id).getContext('2d');
-        if(instance) instance.destroy();
-        return new Chart(ctx, {
-            type: 'bar',
-            plugins: [ChartDataLabels],
-            data: {
-                labels: data.labels,
-                datasets: [
-                    { label: 'Meta', data: data.dMeta, backgroundColor: 'rgba(54, 162, 235, 0.6)' },
-                    { label: 'Real', data: data.dReal, backgroundColor: 'rgba(75, 192, 192, 0.6)' },
-                    { label: 'Gap', data: data.dGap, backgroundColor: 'rgba(255, 99, 132, 0.6)' }
-                ]
-            },
-            options: { responsive: true, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: v=>v>0?v:'' } } }
-        });
-    };
-
-    metaChartQLP = render('grafico-metas-qlp', criarDataset('meta', 'qlp'), metaChartQLP);
-    metaChartPCD = render('grafico-metas-pcd', criarDataset('meta_pcd', 'pcd'), metaChartPCD);
-    metaChartJovem = render('grafico-metas-jovem', criarDataset('meta_jovem', 'jovem'), metaChartJovem);
-}
-
-async function handleMetaSubmit(e) {
-    e.preventDefault();
-    metaSubmitButton.disabled = true;
-    
+// ======== UPLOAD DE FOTO ========
+async function uploadFotoPerfil(file, cpf) {
     try {
-        await fetch(`${API_URL}/metas`, {
+        const resizedBase64 = await compressImage(file, 300, 0.7);
+        const res = await fetch(`${API_URL}/upload-foto`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                area: metaAreaSelect.value,
-                meta: metaValorInput.value,
-                meta_pcd: metaPCDInput.value,
-                meta_jovem: metaJovemInput.value
-            })
+            body: JSON.stringify({ cpf: cpf, imagemBase64: resizedBase64 })
         });
-        
-        metaSuccessMessage.style.visibility = 'visible';
-        setTimeout(() => metaSuccessMessage.style.visibility = 'hidden', 3000);
-        metaForm.reset();
-        carregarDadosDashboard(); // Recarrega tabelas
+
+        if (res.ok) {
+            alert('Foto atualizada com sucesso!');
+            carregarColaboradores();
+            fecharModal();
+        } else {
+            alert('Erro ao salvar foto.');
+        }
     } catch (err) {
-        alert('Erro ao salvar meta.');
-    } finally {
-        metaSubmitButton.disabled = false;
+        console.error(err);
+        alert('Erro ao processar imagem.');
     }
 }
 
-// ======== FUNÇÃO NOVA: GERAR HTML DO PDI ========
+// Wrapper para input file
+window.handleFileSelect = function(input, cpf) {
+    if (input.files && input.files[0]) {
+        uploadFotoPerfil(input.files[0], cpf);
+    }
+};
+
+// ======== FUNÇÃO DO MODAL (ATUALIZADA) ========
+function abrirModalDetalhes(index) {
+    const colab = listaColaboradoresGlobal[index];
+    if (!colab) return;
+
+    const modal = document.getElementById('modal-detalhes');
+    const header = document.getElementById('modal-header');
+    const grid = document.getElementById('modal-dados-grid');
+
+    const nome = colab.NOME || '';
+    const status = colab.SITUACAO || '';
+    // CORREÇÃO TAMBÉM AQUI
+    const fotoSrc = colab.FOTO_PERFIL || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+
+    // HTML do Cabeçalho com Ícone de Câmera Visível
+    header.innerHTML = `
+        <div class="avatar-upload-wrapper">
+            <img src="${fotoSrc}" alt="${nome}">
+            
+            <div class="camera-badge" onclick="document.getElementById('file-input-${index}').click()" title="Alterar Foto">
+                <span class="material-icons-outlined">photo_camera</span>
+            </div>
+            
+            <input type="file" id="file-input-${index}" accept="image/*" style="display: none;" onchange="handleFileSelect(this, '${colab.CPF}')">
+        </div>
+        <div>
+            <h2 style="margin:0; font-size:1.5em;">${nome}</h2>
+            <span class="status-badge" style="background-color:rgba(255,255,255,0.2); border:1px solid #fff; margin-top:5px;">${status}</span>
+        </div>
+    `;
+
+    grid.innerHTML = `
+        <div class="modal-item"><strong>CPF</strong> <span>${formatarCPF(colab.CPF)}</span></div>
+        <div class="modal-item"><strong>Matrícula</strong> <span>${colab.MATRICULA || '-'}</span></div>
+        <div class="modal-item"><strong>Função</strong> <span>${colab['CARGO ATUAL'] || ''}</span></div>
+        <div class="modal-item"><strong>Área</strong> <span>${colab.ATIVIDADE || ''}</span></div>
+        <div class="modal-item"><strong>Salário</strong> <span>${formatarSalario(colab.SALARIO)}</span></div>
+        <div class="modal-item"><strong>Tempo de Casa</strong> <span>${formatarTempoDeEmpresa(colab['TEMPO DE EMPRESA'])}</span></div>
+        <div class="modal-item"><strong>Escolaridade</strong> <span>${colab.ESCOLARIDADE || ''}</span></div>
+        <div class="modal-item"><strong>PCD</strong> <span>${colab.PCD || 'NÃO'}</span></div>
+        <div class="modal-item"><strong>Líder</strong> <span>${colab.LIDER || ''}</span></div>
+        <div class="modal-item"><strong>Turno</strong> <span>${colab.TURNO || ''}</span></div>
+        <div class="modal-item"><strong>CLASSIFICAÇÃO CICLO DE GENTE</strong> <span>${colab.CLASSIFICACAO || '-'}</span></div>
+        <div class="modal-item"><strong>DATA ULTIMA PROMOÇÃO</strong> <span>${formatarDataExcel(colab['DATA DA PROMOCAO'])}</span></div>
+        <div class="modal-item" style="grid-column: 1/-1; background:#f9f9f9; padding:10px; border-radius:4px;">    
+        ${gerarHtmlPDI(colab)}
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+}
+
 function gerarHtmlPDI(colab) {
     let html = `
         <div class="pdi-section">
             <h3>Ciclo de Gente - Plano de Desenvolvimento</h3>
             <div class="pdi-container">
     `;
-    
     let encontrouAlgum = false;
-
-    // Loop de 1 a 7 para verificar as colunas
     for (let i = 1; i <= 7; i++) {
-        const competencia = colab[`COMPETENCIA_${i}`]; // Nome já corrigido pelo backend
-        
-        // Se tiver competência preenchida, cria o card
+        const competencia = colab[`COMPETENCIA_${i}`]; 
         if (competencia) {
             encontrouAlgum = true;
             const status = colab[`STATUS_${i}`] || 'Pendente';
@@ -449,57 +462,9 @@ function gerarHtmlPDI(colab) {
             `;
         }
     }
-
-    if (!encontrouAlgum) {
-        html += `<p style="color:#666; padding:10px;">Nenhum plano de ação cadastrado para este ciclo.</p>`;
-    }
-
+    if (!encontrouAlgum) html += `<p style="color:#666; padding:10px;">Nenhum plano de ação cadastrado.</p>`;
     html += `</div></div>`;
     return html;
-}
-
-// ======== FUNÇÃO DO MODAL ATUALIZADA ========
-function abrirModalDetalhes(index) {
-    const colab = listaColaboradoresGlobal[index];
-    if (!colab) return;
-
-    const modal = document.getElementById('modal-detalhes');
-    const header = document.getElementById('modal-header');
-    const grid = document.getElementById('modal-dados-grid');
-
-    const nome = colab.NOME || '';
-    const status = colab.SITUACAO || '';
-    const funcao = colab['CARGO ATUAL'] || '';
-
-    // Cabeçalho do Modal
-    header.innerHTML = `
-        <img src="avatar-placeholder.png" alt="${nome}">
-        <div>
-            <h2 style="margin:0; font-size:1.5em;">${nome}</h2>
-            <span class="status-badge" style="background-color:rgba(255,255,255,0.2); border:1px solid #fff; margin-top:5px;">${status}</span>
-        </div>
-    `;
-
-    // Dados Pessoais + PDI
-    grid.innerHTML = `
-        <div class="modal-item"><strong>CPF</strong> <span>${formatarCPF(colab.CPF)}</span></div>
-        <div class="modal-item"><strong>Matrícula</strong> <span>${colab.MATRICULA || '-'}</span></div>
-        <div class="modal-item"><strong>Função</strong> <span>${funcao}</span></div>
-        <div class="modal-item"><strong>Área</strong> <span>${colab.ATIVIDADE || ''}</span></div>
-        <div class="modal-item"><strong>Salário</strong> <span>${formatarSalario(colab.SALARIO)}</span></div>
-        <div class="modal-item"><strong>Tempo de Casa</strong> <span>${formatarTempoDeEmpresa(colab['TEMPO DE EMPRESA'])}</span></div>
-        <div class="modal-item"><strong>Escolaridade</strong> <span>${colab.ESCOLARIDADE || ''}</span></div>
-        <div class="modal-item"><strong>PCD</strong> <span>${colab.PCD || 'NÃO'}</span></div>
-        <div class="modal-item"><strong>Líder</strong> <span>${colab.LIDER || ''}</span></div>
-        <div class="modal-item"><strong>Turno</strong> <span>${colab.TURNO || ''}</span></div>
-        <div class="modal-item"><strong>CLASSIFICAÇÃO CICLO DE GENTE</strong> <span>${colab.CLASSIFICACAO || '-'}</span></div>
-        <div class="modal-item"><strong>DATA ULTIMA PROMOÇÃO</strong> <span>${formatarDataExcel(colab['DATA DA PROMOCAO'])}</span></div>
-        <div class="modal-item" style="grid-column: 1/-1; background:#f9f9f9; padding:10px; border-radius:4px;">    
-        ${gerarHtmlPDI(colab)}
-        </div>
-    `;
-
-    modal.style.display = 'flex';
 }
 
 function fecharModal() {
@@ -511,7 +476,83 @@ window.onclick = function(event) {
     if (event.target == modal) modal.style.display = "none";
 };
 
-// Auth Guard
+async function carregarDadosDashboard(renderizarGraficos = false) {
+    if (usuarioPerfil === 'user') return; 
+    try {
+        const res = await fetch(`${API_URL}/dashboard-stats`);
+        const { stats, totalAtivos, areas } = await res.json();
+        renderizarTabelasRelatorio(stats, areas, totalAtivos);
+        if (renderizarGraficos) renderizarGraficosChartJS(stats, areas);
+    } catch (e) { console.error("Erro dashboard stats", e); }
+}
+
+function renderizarTabelasRelatorio(stats, areas, totalAtivos) {
+    if(!reportTableBodyQLP) return;
+    let htmlQLP = '', htmlPCD = '', htmlJovem = '';
+    document.getElementById('quota-pcd-value').textContent = Math.ceil(totalAtivos * (totalAtivos > 1000 ? 0.05 : 0.02));
+    document.getElementById('quota-jovem-value').textContent = Math.ceil(totalAtivos * 0.05);
+    areas.forEach(a => {
+        const s = stats[a];
+        htmlQLP += `<tr><td>${a}</td><td>${s.meta.meta || 0}</td><td>${s.qlp}</td></tr>`;
+        if(s.meta.meta_pcd || s.pcd > 0) htmlPCD += `<tr><td>${a}</td><td>${s.meta.meta_pcd || 0}</td><td>${s.pcd}</td></tr>`;
+        if(s.meta.meta_jovem || s.jovem > 0) htmlJovem += `<tr><td>${a}</td><td>${s.meta.meta_jovem || 0}</td><td>${s.jovem}</td></tr>`;
+    });
+    reportTableBodyQLP.innerHTML = htmlQLP;
+    reportTableBodyPCD.innerHTML = htmlPCD || '<tr><td colspan="3">Vazio</td></tr>';
+    reportTableBodyJovem.innerHTML = htmlJovem || '<tr><td colspan="3">Vazio</td></tr>';
+}
+
+function renderizarGraficosChartJS(stats, areas) {
+    const criarDataset = (keyMeta, keyReal) => {
+        const labels = [], dMeta = [], dReal = [], dGap = [];
+        areas.forEach(a => {
+            const m = stats[a].meta[keyMeta] || 0;
+            const r = stats[a][keyReal];
+            if (m > 0 || r > 0) {
+                labels.push(a); dMeta.push(m); dReal.push(r); dGap.push(Math.max(0, m - r));
+            }
+        });
+        return { labels, dMeta, dReal, dGap };
+    };
+    const render = (id, data, instance) => {
+        const ctx = document.getElementById(id).getContext('2d');
+        if(instance) instance.destroy();
+        return new Chart(ctx, {
+            type: 'bar', plugins: [ChartDataLabels],
+            data: {
+                labels: data.labels,
+                datasets: [
+                    { label: 'Meta', data: data.dMeta, backgroundColor: 'rgba(54, 162, 235, 0.6)' },
+                    { label: 'Real', data: data.dReal, backgroundColor: 'rgba(75, 192, 192, 0.6)' },
+                    { label: 'Gap', data: data.dGap, backgroundColor: 'rgba(255, 99, 132, 0.6)' }
+                ]
+            },
+            options: { responsive: true, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: v=>v>0?v:'' } } }
+        });
+    };
+    metaChartQLP = render('grafico-metas-qlp', criarDataset('meta', 'qlp'), metaChartQLP);
+    metaChartPCD = render('grafico-metas-pcd', criarDataset('meta_pcd', 'pcd'), metaChartPCD);
+    metaChartJovem = render('grafico-metas-jovem', criarDataset('meta_jovem', 'jovem'), metaChartJovem);
+}
+
+async function handleMetaSubmit(e) {
+    e.preventDefault();
+    metaSubmitButton.disabled = true;
+    try {
+        await fetch(`${API_URL}/metas`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                area: metaAreaSelect.value, meta: metaValorInput.value,
+                meta_pcd: metaPCDInput.value, meta_jovem: metaJovemInput.value
+            })
+        });
+        metaSuccessMessage.style.visibility = 'visible';
+        setTimeout(() => metaSuccessMessage.style.visibility = 'hidden', 3000);
+        metaForm.reset();
+        carregarDadosDashboard(); 
+    } catch (err) { alert('Erro ao salvar meta.'); } finally { metaSubmitButton.disabled = false; }
+}
+
 ;(function() {
     if (sessionStorage.getItem('usuarioLogado') !== 'true') window.location.href = 'login.html';
     else {

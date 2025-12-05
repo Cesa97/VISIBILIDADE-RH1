@@ -1,6 +1,6 @@
 /* ======== ESTILOS GERAIS E RESET BÁSICO ======== */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f4f7f6;
     margin: 0;
     padding: 0;
@@ -117,10 +117,6 @@ body {
 .test-credentials p {
     margin: 0 0 10px 0;
 }
-.test-credentials ul {
-    margin: 0;
-    padding-left: 20px;
-}
 
 /* ======== 2. ESTILOS DO DASHBOARD (index.html) ======== */
 
@@ -141,6 +137,7 @@ body {
     top: 0;
     left: 0;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    z-index: 100;
 }
 
 .sidebar-header {
@@ -206,7 +203,6 @@ body {
     color: #dc3545;
 }
 
-
 /* --- Estilos do Conteúdo Principal --- */
 .main-content {
     margin-left: 260px; 
@@ -218,15 +214,6 @@ body {
     text-align: center;
     margin-bottom: 30px;
     color: #333;
-}
-
-/* Placeholder para a página de gestão */
-.placeholder-content {
-    text-align: center;
-    padding: 50px;
-    background: #fff;
-    border-radius: 8px;
-    border: 1px solid #ddd;
 }
 
 /* ======== 3. ESTILOS DO DASHBOARD (Cards e Filtros) ======== */
@@ -263,13 +250,11 @@ body {
     padding: 40px;
 }
 
-/* Container principal dos cards */
 #dashboard-container {
     display: flex;
     flex-wrap: wrap; 
     justify-content: center; 
     gap: 20px; 
-    /* Garante que os cards na mesma linha tenham a mesma altura */
     align-items: stretch; 
 }
 
@@ -280,26 +265,21 @@ body {
     flex-basis: 390px; 
     max-width: 420px;
     min-width: 390px; 
-    
     background-color: #ffffff;
     border: 1px solid #ddd;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     border-radius: 8px;
     overflow: hidden;
     border-top: 5px solid #ccc; 
-
-    /* --- ALINHAMENTO DO RODAPÉ --- */
     display: flex;            
     flex-direction: column;   
     justify-content: space-between; 
 }
 
-/* Cores da borda baseadas no status */
 .employee-card.status-ativo { border-top-color: #28a745; }
 .employee-card.status-afastado { border-top-color: #ffc107; }
 .employee-card.status-desligados { border-top-color: #dc3545; }
 
-/* Cabeçalho do card */
 .card-header {
     display: flex;
     align-items: center;
@@ -314,6 +294,7 @@ body {
     border-radius: 50%;
     margin-right: 15px;
     border: 2px solid #ddd;
+    object-fit: cover;
 }
 
 .card-header h3 {
@@ -322,7 +303,6 @@ body {
     font-size: 1.2em;
 }
 
-/* Badge de Status (cabeçalho) */
 .status-badge {
     font-size: 0.8em;
     font-weight: bold;
@@ -337,7 +317,6 @@ body {
 .status-badge.status-afastado { background-color: #ffc107; }
 .status-badge.status-desligados { background-color: #dc3545; }
 
-/* Corpo do card */
 .card-body { 
     padding: 15px;
     flex-grow: 1; 
@@ -348,11 +327,9 @@ body {
     font-size: 0.9em;
     color: #555;
     display: flex;
-    /* Alinha label e valor horizontalmente */
     align-items: flex-start; 
 }
 
-/* Coluna ESQUERDA (Rótulo) */
 .card-body p strong {
     color: #000;
     margin-right: 10px;
@@ -361,7 +338,6 @@ body {
     text-align: left;
 }
 
-/* Coluna DIREITA (Valor) */
 .card-body p span {
     text-align: left;
     color: #333;
@@ -370,8 +346,6 @@ body {
     min-width: 0;
 }
 
-/* --- BADGES INTERNOS (PCD e CLASSIFICAÇÃO) --- */
-/* Badge PCD */
 .pcd-badge {
     padding: 3px 8px;
     border-radius: 4px;
@@ -380,7 +354,6 @@ body {
 .pcd-badge.pcd-sim { background-color: #d4edda; color: #155724; }
 .pcd-badge.pcd-nao { background-color: #f8d7da; color: #721c24; }
 
-/* Badge Classificação */
 .classificacao-badge {
     padding: 3px 8px;
     border-radius: 4px;
@@ -397,17 +370,13 @@ body {
 .classificacao-preparar { background-color: #4a69e2; color: white; }
 .classificacao-sem { background-color: #f8f9fa; color: #555; border: 1px solid #ddd; }
 
-/* --- CORREÇÃO IMPORTANTE: ALINHAMENTO DOS BADGES --- */
-/* Isso força os spans que tem badge a não ocuparem a largura total */
 .card-body p span.pcd-badge,
 .card-body p span.classificacao-badge {
-    flex-basis: auto;  /* Tamanho automático baseado no texto */
-    flex-grow: 0;      /* Não cresce para ocupar espaço */
+    flex-basis: auto; 
+    flex-grow: 0;     
     text-align: center;
-    /* Se quiser alinhar à direita: margin-left: auto; */
 }
 
-/* Estilos da Paginação */
 #pagination-container {
     width: 100%;
     text-align: center;
@@ -422,16 +391,14 @@ body {
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
+    transition: background-color 0.3s;
 }
 #load-more-button:hover {
     background-color: #0056b3;
-    transform: translateY(-2px);
 }
 #load-more-button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
-    transform: none;
 }
 
 /* ======== 4. ESTILOS DO PAINEL DE GESTÃO ======== */
@@ -480,7 +447,6 @@ body {
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 1em;
-    box-sizing: border-box;
 }
 
 .meta-form button {
@@ -493,7 +459,6 @@ body {
     font-weight: bold;
     font-size: 0.9em;
     cursor: pointer;
-    transition: background-color 0.3s;
 }
 
 .meta-form button:hover {
@@ -525,7 +490,6 @@ body {
     font-size: 0.9em;
     text-transform: uppercase;
     text-align: center;
-    vertical-align: middle;
     font-weight: bold;
 }
 
@@ -539,7 +503,6 @@ body {
 .report-table th:nth-child(3), .report-table td:nth-child(3) {
     text-align: center;
     width: 100px;
-    font-weight: normal;
 }
 
 .report-header {
@@ -547,12 +510,6 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-}
-
-.report-header h2 {
-    margin: 0;
-    border-bottom: none;
-    padding-bottom: 0;
 }
 
 .quota-info {
@@ -564,19 +521,8 @@ body {
     min-width: 150px;
 }
 
-.quota-info span {
-    font-size: 0.8em;
-    color: #555;
-    display: block;
-}
-
-.quota-info strong {
-    font-size: 1.8em;
-    color: #192A56;
-    display: block;
-}
-
-/* ======== 5. ESTILOS DA PÁGINA DE GRÁFICOS ======== */
+.quota-info span { font-size: 0.8em; color: #555; display: block; }
+.quota-info strong { font-size: 1.8em; color: #192A56; display: block; }
 
 .chart-container {
     background-color: #ffffff;
@@ -587,46 +533,27 @@ body {
     margin-bottom: 30px;
 }
 
-.chart-container h2 {
-    margin-top: 0;
-    text-align: center;
-}
-.chart-container p {
-    text-align: center;
-    font-size: 0.9em;
-    color: #555;
-    margin-bottom: 25px;
-}
-
 #grafico-metas-qlp {
     width: 100% !important;
     max-height: 450px;
 }
 
-/* ======== ESTILOS DA SETA DE EXPANDIR (CARD FOOTER) ======== */
 .card-footer {
     text-align: center;
     padding: 10px;
     background-color: #f8f9fa;
     border-top: 1px solid #eee;
     cursor: pointer;
-    transition: background-color 0.2s;
 }
-
-.card-footer:hover {
-    background-color: #e2e6ea;
-}
+.card-footer:hover { background-color: #e2e6ea; }
 
 .expand-icon {
     font-size: 24px;
     color: #4a69e2;
-    font-weight: bold;
     display: block;
-    transform: rotate(0deg);
-    transition: transform 0.3s;
 }
 
-/* ======== ESTILOS DO MODAL ======== */
+/* ======== MODAL ======== */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -671,6 +598,7 @@ body {
     z-index: 10;
 }
 
+/* CABEÇALHO DO MODAL - CORRIGIDO PARA FOTO */
 .modal-header-custom {
     padding: 25px;
     background-color: #192A56;
@@ -680,12 +608,50 @@ body {
     gap: 20px;
 }
 
-.modal-header-custom img {
-    width: 80px;
-    height: 80px;
+/* WRAPPER DA FOTO + BOTÃO CAMERA */
+.avatar-upload-wrapper {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+}
+
+.avatar-upload-wrapper img {
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
-    border: 3px solid #fff;
+    border: 4px solid #fff;
     object-fit: cover;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* O BOTÃO DE CÂMERA (BEM VISÍVEL) */
+.camera-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: #fff;
+    color: #192A56;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    border: 2px solid #192A56;
+    transition: transform 0.2s, background-color 0.2s;
+    z-index: 10;
+}
+
+.camera-badge:hover {
+    transform: scale(1.1);
+    background-color: #f0f0f0;
+}
+
+.camera-badge .material-icons-outlined {
+    font-size: 20px;
 }
 
 .modal-body-scroll {
@@ -721,10 +687,9 @@ body {
     font-size: 1.1em;
     color: #333;
     font-weight: 500;
-    word-break: break-word;
 }
 
-/* ======== ESTILOS DO CICLO DE GENTE (PDI) ======== */
+/* ======== PDI ======== */
 .pdi-section {
     margin-top: 30px;
     border-top: 2px solid #eee;
@@ -765,7 +730,6 @@ body {
     font-weight: 800;
     text-transform: uppercase;
     border-bottom: 2px solid #e9ecef;
-    letter-spacing: 0.5px;
 }
 
 .pdi-details {
@@ -774,26 +738,16 @@ body {
     overflow-x: auto;
     padding: 0;
     white-space: nowrap;
-    scrollbar-width: thin;
-    scrollbar-color: #ccc #f9f9f9;
 }
-
-.pdi-details::-webkit-scrollbar { height: 8px; }
-.pdi-details::-webkit-scrollbar-track { background: #f9f9f9; }
-.pdi-details::-webkit-scrollbar-thumb { background-color: #bbb; border-radius: 4px; }
 
 .pdi-item {
     flex: 0 0 auto;
     width: 200px;
-    min-width: 180px;
     padding: 15px 20px;
     border-right: 1px solid #eee;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
 }
-
-.pdi-item:last-child { border-right: none; }
 
 .pdi-item strong {
     display: block;
@@ -802,9 +756,6 @@ body {
     text-transform: uppercase;
     margin-bottom: 12px;
     font-weight: 800;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid #e9ecef; 
-    padding-bottom: 5px;
 }
 
 .pdi-item span {
@@ -812,7 +763,6 @@ body {
     color: #333;
     font-weight: 500;
     white-space: normal;
-    line-height: 1.4;
 }
 
 .pdi-card[data-status="CONCLUIDO"] h4 { border-left: 5px solid #28a745; }
