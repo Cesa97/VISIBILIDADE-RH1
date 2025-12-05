@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-// AUMENTADO O LIMITE PARA 50MB PARA ACEITAR FOTOS
+// Limite aumentado para aceitar fotos grandes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -16,7 +16,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 // ========================================================
-// 🔐 CREDENCIAIS (ADMIN + TESTE)
+// 🔐 CREDENCIAIS
 // ========================================================
 const CREDENCIAIS_FIXAS = {
     "11122233344": { senha: "123456", nome: "Administrador Master", perfil: "admin" },
@@ -24,26 +24,58 @@ const CREDENCIAIS_FIXAS = {
 };
 
 // ========================================================
-// 🛠️ FUNÇÕES UTILITÁRIAS
+// 🛠️ FUNÇÃO DE LIMPEZA DE TEXTO (CORRIGIDA E SEM ERROS)
 // ========================================================
 function corrigirStringQuebrada(texto) {
     if (typeof texto !== 'string' || !texto) return texto;
+    
+    // 1. Correções Espaciais
     if (texto.includes(' S ')) texto = texto.replace(/ S /g, ' ÀS ');
+
+    // 2. Dicionário de Palavras Quebradas (Mojibake UTF-8/Latin1)
+    const CORRECOES_COMUNS = [
+        { erro: /AO/g, correto: 'AÇÃO' },
+        { erro: /AAO/g, correto: 'AÇÃO' },
+        { erro: /LIDERANA/g, correto: 'LIDERANÇA' },
+        { erro: /CONVERSAO/g, correto: 'CONVERSAÇÃO' },
+        { erro: /COMUNICAO/g, correto: 'COMUNICAÇÃO' },
+        { erro: /INTERAES/g, correto: 'INTERAÇÕES' },
+        { erro: /INTERAO/g, correto: 'INTERAÇÃO' },
+        { erro: /PBLICO/g, correto: 'PÚBLICO' },
+        { erro: /SEGURANA/g, correto: 'SEGURANÇA' },
+        { erro: /CONFIANA/g, correto: 'CONFIANÇA' },
+        { erro: /PRECISO/g, correto: 'PRECISÃO' },
+        { erro: /EXPRESSO/g, correto: 'EXPRESSÃO' },
+        { erro: /PRIORIZAO/g, correto: 'PRIORIZAÇÃO' },
+        { erro: /REUNIES/g, correto: 'REUNIÕES' },
+        { erro: /DECISES/g, correto: 'DECISÕES' },
+        { erro: /SITUAO/g, correto: 'SITUAÇÃO' },
+        { erro: /NAO/g, correto: 'NÃO' }, 
+        { erro: /H /g, correto: 'HÁ ' },
+        // CORREÇÃO: Remove o caractere estranho () usando o código Unicode correto
+        { erro: /\uFFFD/g, correto: '' } 
+    ];
+
+    CORRECOES_COMUNS.forEach(item => {
+        texto = texto.replace(item.erro, item.correto);
+    });
+
+    // 3. Correções antigas de interrogação '?'
     if (texto.match(/[\?]/)) {
-        const correcoes = {
+        const correcoesAntigas = {
             'COMPET.NCIAS': 'COMPETÊNCIAS', 'SEGURAN.A': 'SEGURANÇA',
             'CONFIAN.A': 'CONFIANÇA', 'AN.LISE': 'ANÁLISE',
             'ANAL.TICA': 'ANALÍTICA', 'DECIS.ES': 'DECISÕES',
             'PRIORIZA..O': 'PRIORIZAÇÃO', 'REUNI.ES': 'REUNIÕES',
             'COMUNICA..O': 'COMUNICAÇÃO'
         };
-        for (const [erro, correto] of Object.entries(correcoes)) {
+        for (const [erro, correto] of Object.entries(correcoesAntigas)) {
             const regex = new RegExp(erro, 'g');
             if (texto.match(regex)) texto = texto.replace(regex, correto);
         }
-        if (texto.match(/ N.O /)) texto = texto.replace(/ N.O /g, ' NÃO ');
         texto = texto.replace(/(\d)\./g, '$1°');
     }
+
     return texto;
 }
 
@@ -79,7 +111,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. Colaboradores
+// 2. Colaboradores (AGORA LIMPANDO TODOS OS CAMPOS DO PDI)
 app.get('/api/colaboradores', async (req, res) => {
     try {
         const { search, status, area, lider, classificacao, cpf_filtro, page = 0 } = req.query;
@@ -104,9 +136,24 @@ app.get('/api/colaboradores', async (req, res) => {
 
         const dadosLimpos = (data || []).map(c => {
             const obj = { ...c };
-            ['NOME', 'ATIVIDADE', 'LIDER', 'TURNO', 'ESCOLARIDADE', 'CARGO ATUAL'].forEach(k => { if (obj[k]) obj[k] = corrigirStringQuebrada(obj[k]); });
+            
+            // 1. Limpa campos principais
+            ['NOME', 'ATIVIDADE', 'LIDER', 'TURNO', 'ESCOLARIDADE', 'CARGO ATUAL'].forEach(k => { 
+                if (obj[k]) obj[k] = corrigirStringQuebrada(obj[k]); 
+            });
+
+            // 2. Limpa TODOS os campos do Ciclo de Gente (PDI)
             for(let i=1; i<=7; i++) {
-                [`COMPETENCIA_${i}`, `SITUACAO_DA_ACAO_${i}`, `O_QUE_FAZER_${i}`].forEach(k => { if (obj[k]) obj[k] = corrigirStringQuebrada(obj[k]); });
+                [
+                    `COMPETENCIA_${i}`, 
+                    `SITUACAO_DA_ACAO_${i}`, 
+                    `O_QUE_FAZER_${i}`, 
+                    `POR_QUE_FAZER_${i}`,      // Motivo
+                    `QUE_PODE_ME_AJUDAR_${i}`, // Apoio
+                    `COMO_VOU_FAZER_${i}`      // Método
+                ].forEach(k => { 
+                    if (obj[k]) obj[k] = corrigirStringQuebrada(obj[k]); 
+                });
             }
             return obj;
         });
@@ -160,27 +207,21 @@ app.post('/api/metas', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 6. 📸 ROTA DE UPLOAD DE FOTO (NOVA)
+// 6. Upload Foto
 app.post('/api/upload-foto', async (req, res) => {
     try {
         const { cpf, imagemBase64 } = req.body;
         const cpfLimpo = cpf.replace(/\D/g, '');
 
-        if (!cpfLimpo || !imagemBase64) {
-            return res.status(400).json({ error: "Dados incompletos" });
-        }
+        if (!cpfLimpo || !imagemBase64) return res.status(400).json({ error: "Dados incompletos" });
 
-        // Atualiza a coluna FOTO_PERFIL do colaborador específico
         const { error } = await supabase
             .from('QLP')
             .update({ 'FOTO_PERFIL': imagemBase64 })
             .eq('CPF', cpfLimpo);
 
         if (error) throw error;
-
-        console.log(`📸 Foto atualizada para CPF: ${cpfLimpo}`);
         res.json({ success: true });
-
     } catch (err) {
         console.error("Erro upload foto:", err);
         res.status(500).json({ error: "Erro ao salvar foto" });
