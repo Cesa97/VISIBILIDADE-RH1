@@ -24,50 +24,77 @@ const CREDENCIAIS_FIXAS = {
 };
 
 // ========================================================
-// 🛠️ FUNÇÃO DE LIMPEZA DE TEXTO (CORRIGIDA E SEM ERROS)
+// 🛠️ FUNÇÃO DE LIMPEZA DE TEXTO (VERSÃO DEFINITIVA V6)
 // ========================================================
 function corrigirStringQuebrada(texto) {
     if (typeof texto !== 'string' || !texto) return texto;
     
-    // 1. Correções Espaciais
-    if (texto.includes(' S ')) texto = texto.replace(/ S /g, ' ÀS ');
+    // 1. CORREÇÕES CIRÚRGICAS (PRIORIDADE MÁXIMA)
+    // Resolve especificamente os erros relatados ignorando regras genéricas
+    if (texto.includes('H UMA')) texto = texto.replace(/H UMA/g, 'HÁ UMA');
+    
+    // Resolve qualquer variação de "Analista Opera??es" ou "Analista Operaes"
+    // O regex pega "Analista Opera" + qualquer lixo + "es"
+    texto = texto.replace(/Analista Opera.{1,5}es/gi, 'Analista Operações');
 
-    // 2. Dicionário de Palavras Quebradas (Mojibake UTF-8/Latin1)
+    // 2. Correções Espaciais e de Caracteres Estranhos
+    if (texto.includes(' S ')) texto = texto.replace(/ S /g, ' ÀS ');
+    
+    // Remove caractere de substituição unicode () explicitamente
+    texto = texto.replace(/\uFFFD/g, ''); 
+
+    // 3. Dicionário de Correções Gerais
     const CORRECOES_COMUNS = [
-        { erro: /AO/g, correto: 'AÇÃO' },
-        { erro: /AAO/g, correto: 'AÇÃO' },
+        // CORREÇÃO DO "H" ISOLADO (Verbo Haver em outros contextos)
+        // \b garante que é o H sozinho. Ex: "H de horas" não muda, mas "H duvidas" vira "HÁ duvidas"
+        { erro: /\bH\b/g, correto: 'HÁ' },
+
+        // CORREÇÃO DO PDI (Contexto de frase)
+        { erro: /SEGURAN.A E PRECISO/g, correto: 'SEGURANÇA E PRECISÃO' },
+        { erro: /COM MAIS SEGURAN.A/g, correto: 'COM MAIS SEGURANÇA' },
+        { erro: / E PRECISO\./g, correto: ' E PRECISÃO.' },
+
+        // CORREÇÃO GENÉRICA PARA "OPERAÇÕES" (Caso não tenha sido pego no cirúrgico)
+        { erro: /Opera[^ ]{1,4}es/gi, correto: 'Operações' },
+        { erro: /OPERA[^ ]{1,4}ES/g, correto: 'OPERAÇÕES' },
+        
+        // --- CORREÇÕES DE PALAVRAS QUEBRADAS ---
         { erro: /LIDERANA/g, correto: 'LIDERANÇA' },
+        { erro: /LIDERANCA/g, correto: 'LIDERANÇA' },
         { erro: /CONVERSAO/g, correto: 'CONVERSAÇÃO' },
         { erro: /COMUNICAO/g, correto: 'COMUNICAÇÃO' },
+        { erro: /COMUNICACAO/g, correto: 'COMUNICAÇÃO' },
         { erro: /INTERAES/g, correto: 'INTERAÇÕES' },
+        { erro: /INTERACOES/g, correto: 'INTERAÇÕES' },
         { erro: /INTERAO/g, correto: 'INTERAÇÃO' },
+        { erro: /INTERACAO/g, correto: 'INTERAÇÃO' },
         { erro: /PBLICO/g, correto: 'PÚBLICO' },
         { erro: /SEGURANA/g, correto: 'SEGURANÇA' },
+        { erro: /SEGURANCA/g, correto: 'SEGURANÇA' },
         { erro: /CONFIANA/g, correto: 'CONFIANÇA' },
-        { erro: /PRECISO/g, correto: 'PRECISÃO' },
+        { erro: /CONFIANCA/g, correto: 'CONFIANÇA' },
         { erro: /EXPRESSO/g, correto: 'EXPRESSÃO' },
         { erro: /PRIORIZAO/g, correto: 'PRIORIZAÇÃO' },
         { erro: /REUNIES/g, correto: 'REUNIÕES' },
         { erro: /DECISES/g, correto: 'DECISÕES' },
         { erro: /SITUAO/g, correto: 'SITUAÇÃO' },
-        { erro: /NAO/g, correto: 'NÃO' }, 
-        { erro: /H /g, correto: 'HÁ ' },
-        // CORREÇÃO: Remove o caractere estranho () usando o código Unicode correto
-        { erro: /\uFFFD/g, correto: '' } 
+        { erro: /SITUACAO/g, correto: 'SITUAÇÃO' },
+        { erro: /NAO/g, correto: 'NÃO' }
     ];
 
     CORRECOES_COMUNS.forEach(item => {
         texto = texto.replace(item.erro, item.correto);
     });
 
-    // 3. Correções antigas de interrogação '?'
+    // 4. Correções antigas de interrogação '?' (Backup final)
     if (texto.match(/[\?]/)) {
         const correcoesAntigas = {
             'COMPET.NCIAS': 'COMPETÊNCIAS', 'SEGURAN.A': 'SEGURANÇA',
             'CONFIAN.A': 'CONFIANÇA', 'AN.LISE': 'ANÁLISE',
             'ANAL.TICA': 'ANALÍTICA', 'DECIS.ES': 'DECISÕES',
             'PRIORIZA..O': 'PRIORIZAÇÃO', 'REUNI.ES': 'REUNIÕES',
-            'COMUNICA..O': 'COMUNICAÇÃO'
+            'COMUNICA..O': 'COMUNICAÇÃO', 'OPERA..ES': 'OPERAÇÕES',
+            'Opera..es': 'Operações'
         };
         for (const [erro, correto] of Object.entries(correcoesAntigas)) {
             const regex = new RegExp(erro, 'g');
@@ -111,7 +138,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. Colaboradores (AGORA LIMPANDO TODOS OS CAMPOS DO PDI)
+// 2. Colaboradores
 app.get('/api/colaboradores', async (req, res) => {
     try {
         const { search, status, area, lider, classificacao, cpf_filtro, page = 0 } = req.query;
@@ -137,8 +164,8 @@ app.get('/api/colaboradores', async (req, res) => {
         const dadosLimpos = (data || []).map(c => {
             const obj = { ...c };
             
-            // 1. Limpa campos principais
-            ['NOME', 'ATIVIDADE', 'LIDER', 'TURNO', 'ESCOLARIDADE', 'CARGO ATUAL'].forEach(k => { 
+            // 1. Limpa campos principais (INCLUINDO CARGO_ANTIGO e CARGO ATUAL)
+            ['NOME', 'ATIVIDADE', 'LIDER', 'TURNO', 'ESCOLARIDADE', 'CARGO ATUAL', 'CARGO_ANTIGO'].forEach(k => { 
                 if (obj[k]) obj[k] = corrigirStringQuebrada(obj[k]); 
             });
 
@@ -166,9 +193,10 @@ app.get('/api/colaboradores', async (req, res) => {
 app.get('/api/filtros', async (req, res) => {
     try {
         const { data } = await supabase.from('QLP').select('ATIVIDADE, LIDER, CLASSIFICACAO');
-        const areas = [...new Set(data.map(d => corrigirStringQuebrada(d.ATIVIDADE)).filter(Boolean))].sort();
-        const lideres = [...new Set(data.map(d => corrigirStringQuebrada(d.LIDER)).filter(Boolean))].sort();
-        const classificacoes = [...new Set(data.map(d => d.CLASSIFICACAO).filter(Boolean))].sort();
+        const safeData = data || [];
+        const areas = [...new Set(safeData.map(d => corrigirStringQuebrada(d.ATIVIDADE)).filter(Boolean))].sort();
+        const lideres = [...new Set(safeData.map(d => corrigirStringQuebrada(d.LIDER)).filter(Boolean))].sort();
+        const classificacoes = [...new Set(safeData.map(d => d.CLASSIFICACAO).filter(Boolean))].sort();
         res.json({ areas, lideres, classificacoes });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -176,10 +204,16 @@ app.get('/api/filtros', async (req, res) => {
 // 4. Dashboard Stats
 app.get('/api/dashboard-stats', async (req, res) => {
     try {
-        const { data: metas } = await supabase.from('metas_qlp').select('*');
-        const { data: ativos } = await supabase.from('QLP').select('ATIVIDADE, SITUACAO, PCD, "CARGO ATUAL"').eq('SITUACAO', 'ATIVO');
+        const { data: metasData, error: errorMetas } = await supabase.from('metas_qlp').select('*');
+        const { data: ativosData, error: errorAtivos } = await supabase.from('QLP').select('ATIVIDADE, SITUACAO, PCD, "CARGO ATUAL"').eq('SITUACAO', 'ATIVO');
         
-        const metasMap = (metas || []).reduce((acc, m) => ({...acc, [m.area]: m}), {});
+        if (errorMetas) console.error("Erro ao buscar metas:", errorMetas);
+        if (errorAtivos) console.error("Erro ao buscar ativos:", errorAtivos);
+
+        const metas = metasData || [];
+        const ativos = ativosData || [];
+        
+        const metasMap = metas.reduce((acc, m) => ({...acc, [m.area]: m}), {});
         const areas = [...new Set([...ativos.map(d => corrigirStringQuebrada(d.ATIVIDADE)).filter(Boolean), ...Object.keys(metasMap)])].sort();
         
         const stats = {};
@@ -193,8 +227,12 @@ app.get('/api/dashboard-stats', async (req, res) => {
                 if ((c['CARGO ATUAL']||'').includes('JOVEM APRENDIZ')) stats[area].jovem++;
             }
         });
+        
         res.json({ stats, totalAtivos: ativos.length, areas });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) {
+        console.error("Erro rota dashboard-stats:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // 5. Salvar Metas

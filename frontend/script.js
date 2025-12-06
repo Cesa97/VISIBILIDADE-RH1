@@ -480,10 +480,30 @@ async function carregarDadosDashboard(renderizarGraficos = false) {
     if (usuarioPerfil === 'user') return; 
     try {
         const res = await fetch(`${API_URL}/dashboard-stats`);
-        const { stats, totalAtivos, areas } = await res.json();
+        
+        // CORREÇÃO: Verifica se a resposta foi bem sucedida antes de tentar ler JSON
+        if (!res.ok) {
+            throw new Error(`Erro na API: ${res.status}`);
+        }
+
+        const data = await res.json();
+        
+        // CORREÇÃO: Garante que os dados existem antes de usar
+        if(!data || !data.stats || !data.areas) {
+            console.warn("Dados do dashboard incompletos ou vazios.");
+            return;
+        }
+
+        const { stats, totalAtivos, areas } = data;
+        
         renderizarTabelasRelatorio(stats, areas, totalAtivos);
+        
         if (renderizarGraficos) renderizarGraficosChartJS(stats, areas);
-    } catch (e) { console.error("Erro dashboard stats", e); }
+
+    } catch (e) { 
+        console.error("Erro dashboard stats", e); 
+        // Opcional: Mostrar aviso na tela
+    }
 }
 
 function renderizarTabelasRelatorio(stats, areas, totalAtivos) {
